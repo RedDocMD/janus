@@ -2,17 +2,16 @@ module Lib (hasGitDirectory, gitStatus, gitAdd, gitAddAll, gitCommit) where
 
 import           Control.Monad        (void)
 import           Control.Monad.Extra  (anyM)
-import           System.Directory     (listDirectory)
+import           System.Directory     (doesDirectoryExist, listDirectory)
 import           System.Exit
 import           System.FilePath      (splitPath)
-import           System.Posix.Files   (getFileStatus, isDirectory)
 import           System.Process.Extra (CreateProcess (cwd), proc,
                                        readCreateProcessWithExitCode)
 
 isGitDirectory :: FilePath -> IO Bool
 isGitDirectory p = do
-  fs <- getFileStatus p
-  return (isDirectory fs && checkGit p)
+  isDir <- doesDirectoryExist p
+  return (isDir && checkGit p)
   where
     checkGit pp = last (splitPath pp) == ".git"
 
