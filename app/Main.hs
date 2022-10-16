@@ -1,10 +1,11 @@
 module Main (main) where
-import           Control.Monad       (forM)
+import           Control.Monad       (filterM, forM)
 import           Control.Monad.Extra (concatForM)
 import           Data.Functor        ((<&>))
 import           Data.List.Extra     (splitOn)
 import           Data.Maybe          (fromMaybe)
-import           Lib                 (hasGitDirectory)
+import           Lib                 (GitStatus (fileStatus), gitStatus,
+                                      hasGitDirectory)
 import           System.Directory    (doesDirectoryExist, getDirectoryContents)
 import           System.Environment  (lookupEnv)
 import           System.FilePath     ((</>))
@@ -40,7 +41,18 @@ getAllGitDirectories :: [FilePath] -> [FilePath] -> IO [FilePath]
 getAllGitDirectories paths exc = concatForM paths (`getGitDirectories` exc)
 
 
+isGitActionRequired :: FilePath -> IO Bool
+isGitActionRequired path = do
+    status <- gitStatus path
+    print status
+    return $ fileStatus status /= ""
+
+
 main :: IO ()
 main = do
-    dirs <- getGitDirectories "/home/dknite/work" []
-    putStrLn $ unwords dirs
+    incDirs <- getPaths searchEnvVar
+    excDirs <- getPaths excludeEnvVar
+    reqDirs <- getAllGitDirectories incDirs excDirs >>= filterM isGitActionRequired
+    if null reqDirs
+        then putStrLn "All your code is safe!"
+        else putStrLn $ unwords reqDirs
